@@ -47,20 +47,24 @@
 
     /* Классы .growing и .disappearing останутся, размеры будут динамические */
 
-    .text-box {
+        .text-box {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: #1a73e8;
-      color: #fff;
+      /* Изменено: Белый фон */
+      background: #ffffff; 
+      /* Изменено: Черный текст */
+      color: #000000; 
       font-size: 24px;
       font-weight: bold;
       padding: 12px 20px;
-      border: 2px solid #4fc3f7;
+      /* Изменено: Белая рамка */
+      border: 2px solid #ffffff; 
       border-radius: 8px;
       white-space: nowrap;
-      box-shadow: 0 0 15px rgba(79, 195, 247, 0.6);
+      /* Изменено: Белая подсветка */
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8); 
       pointer-events: auto;
       text-align: center;
       animation: pulse 1.5s infinite;
