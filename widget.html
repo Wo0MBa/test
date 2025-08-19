@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Интерактивные изображения</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+      background: transparent;
+      overflow: hidden;
+      font-family: 'Arial', sans-serif;
+    }
+
+    .cucumber-container {
+      position: absolute;
+      width: 150px;
+      height: 300px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      pointer-events: none;
+      transform: translateZ(0);
+      will-change: top, left;
+    }
+
+    .cucumber {
+      position: absolute;
+      bottom: 0;
+      width: 120px;
+      height: 120px;
+      cursor: pointer;
+      transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-origin: bottom center;
+      pointer-events: auto;
+    }
+
+    .cucumber img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      image-rendering: crisp-edges;
+    }
+
+    .growing {
+      width: 200px;
+      height: 200px;
+    }
+
+    .disappearing {
+      opacity: 0 !important;
+      transform: scale(0.1) !important;
+      transition: all 0.8s ease-out !important;
+    }
+
+    .text-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #1a73e8;
+      color: #fff;
+      font-size: 24px;
+      font-weight: bold;
+      padding: 12px 20px;
+      border: 2px solid #4fc3f7;
+      border-radius: 8px;
+      white-space: nowrap;
+      box-shadow: 0 0 15px rgba(79, 195, 247, 0.6);
+      pointer-events: auto;
+      text-align: center;
+      animation: pulse 1.5s infinite;
+      z-index: 10;
+      user-select: none;
+      cursor: pointer;
+    }
+
+    @keyframes pulse {
+      0% { transform: translate(-50%, -50%) scale(1); }
+      50% { transform: translate(-50%, -50%) scale(1.1); }
+      100% { transform: translate(-50%, -50%) scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <!-- Звуки с правильными путями -->
+  <audio id="click-sound" preload="auto">
+    <source src="/my-genially-interactive/sounds/click.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="word-sound" preload="auto">
+    <source src="/my-genially-interactive/sounds/click.mp3" type="audio/mpeg">
+  </audio>
+
+  <audio id="text-click-sound" preload="auto">
+    <source src="/my-genially-interactive/sounds/click.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+    // Получаем звуковые элементы с проверкой
+    const clickSound = document.getElementById('click-sound');
+    const wordSound = document.getElementById('word-sound');
+    const textClickSound = document.getElementById('text-click-sound');
+
+    // Проверка наличия звуков
+    if (!clickSound || !wordSound || !textClickSound) {
+      console.log("Предупреждение: некоторые звуковые элементы не найдены");
+    }
+
+    // Получаем параметры из URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const imageUrl = urlParams.get('image') || 'https://i.pinimg.com/originals/fc/a7/66/fca766643693b021645b276bd61ad09e.png';
+    const wordsParam = urlParams.get('words') || 'Твори Верь Мечтай Действуй';
+    const words = wordsParam.split(' ');
+
+    // Параметры анимации
+    const count = words.length;
+    const containers = [];
+    const startTop = -50;
+    const endTop = 25;
+    const totalWidth = 70;
+    const margin = 15;
+    const speed = 0.3;
+
+    // Улучшенная функция для воспроизведения звука
+    function playSound(soundElement) {
+      // Проверка, что элемент существует
+      if (!soundElement) {
+        console.log("Ошибка: звуковой элемент не найден");
+        return;
+      }
+      
+      try {
+        // Сброс времени воспроизведения
+        if (soundElement.currentTime) {
+          soundElement.currentTime = 0;
+        }
+        
+        // Воспроизведение звука с обработкой Promise
+        const playPromise = soundElement.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            console.log("Звук заблокирован браузером:", error);
+          });
+        }
+      } catch (error) {
+        console.log("Ошибка воспроизведения звука:", error);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      const body = document.body;
+
+      for (let i = 0; i < count; i++) {
+        const left = margin + (totalWidth / (count - 1)) * i;
+
+        const container = document.createElement('div');
+        container.className = 'cucumber-container';
+        container.style.left = `${left}%`;
+        container.style.top = `${startTop}%`;
+        container.dataset.index = i;
+        body.appendChild(container);
+
+        const cucumber = document.createElement('div');
+        cucumber.className = 'cucumber';
+        cucumber.innerHTML = `<img src="${imageUrl}" alt="Изображение">`;
+        container.appendChild(cucumber);
+
+        cucumber.moveInterval = null;
+
+        let angle = Math.random() * Math.PI * 2;
+        const velocity = {
+          x: Math.cos(angle) * speed,
+          y: Math.sin(angle) * speed
+        };
+
+        containers.push({ element: container, cucumber, velocity });
+      }
+
+      setTimeout(startFalling, 500);
+    });
+
+    function startFalling() {
+      const duration = 1800;
+      const interval = 30;
+      const steps = duration / interval;
+      let currentStep = 0;
+
+      const timer = setInterval(() => {
+        currentStep++;
+        const progress = Math.min(currentStep / steps, 1);
+        const currentTop = startTop + (endTop - startTop) * progress;
+
+        containers.forEach(({ element }) => {
+          element.style.top = `${currentTop}%`;
+        });
+
+        if (progress >= 1) {
+          clearInterval(timer);
+          startAllMovement();
+        }
+      }, interval);
+    }
+
+    function startAllMovement() {
+      containers.forEach(({ element, cucumber, velocity }) => {
+        element.style.top = `${endTop}%`;
+
+        cucumber.moveInterval = setInterval(() => {
+          let left = parseFloat(element.style.left) || 0;
+          let top = parseFloat(element.style.top) || 0;
+
+          left += velocity.x;
+          top += velocity.y;
+
+          if (Math.random() < 0.03) {
+            const turn = (Math.random() - 0.5) * 0.3;
+            const currentAngle = Math.atan2(velocity.y, velocity.x);
+            const newAngle = currentAngle + turn;
+            velocity.x = Math.cos(newAngle) * speed;
+            velocity.y = Math.sin(newAngle) * speed;
+          }
+
+          // Ограничения движения
+          const minX = 10, maxX = 90;
+          const minY = 10, maxY = 60;
+
+          if (left <= minX || left >= maxX) {
+            velocity.x *= -1;
+            left = left < minX ? minX : maxX;
+          }
+          if (top <= minY || top >= maxY) {
+            velocity.y *= -1;
+            top = top < minY ? minY : maxY;
+          }
+
+          element.style.left = `${left.toFixed(2)}%`;
+          element.style.top = `${top.toFixed(2)}%`;
+        }, 100);
+      });
+    }
+
+    document.body.addEventListener('click', function (e) {
+      const cucumber = e.target.closest('.cucumber');
+      if (cucumber && !cucumber.classList.contains('clicked')) {
+        // Воспроизводим звук при клике на изображение
+        playSound(clickSound);
+
+        const container = cucumber.parentElement;
+        const index = parseInt(container.dataset.index);
+        if (!isNaN(index) && index >= 0 && index < words.length) {
+
+          cucumber.classList.add('clicked');
+
+          if (cucumber.moveInterval) {
+            clearInterval(cucumber.moveInterval);
+            cucumber.moveInterval = null;
+          }
+
+          cucumber.classList.add('growing');
+
+          setTimeout(() => {
+            cucumber.classList.add('disappearing');
+          }, 1000);
+
+          setTimeout(() => {
+            cucumber.style.display = 'none';
+
+            const textBox = document.createElement('div');
+            textBox.className = 'text-box';
+            textBox.textContent = words[index];
+            container.appendChild(textBox);
+
+            // УБРАЛ звук при появлении слов - теперь только при клике на слово
+            // playSound(wordSound); - ЭТА СТРОКА УДАЛЕНА
+
+            // Обработчик клика на текстовом блоке
+            textBox.addEventListener('click', function (event) {
+              event.stopPropagation();
+              // Воспроизводим звук при клике на словах
+              playSound(textClickSound);
+              this.remove();
+            });
+          }, 1800);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
