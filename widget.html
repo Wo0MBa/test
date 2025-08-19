@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Интерактивные изображения</title>
+  <style id="dynamic-styles">
+    /* Динамические стили будут вставлены сюда скриптом */
+  </style>
   <style>
     body {
       margin: 0;
@@ -16,8 +19,7 @@
 
     .cucumber-container {
       position: absolute;
-      width: 150px;
-      height: 300px;
+      /* Ширина и высота контейнера теперь зависят от размера изображения */
       display: flex;
       justify-content: center;
       align-items: flex-end;
@@ -29,8 +31,7 @@
     .cucumber {
       position: absolute;
       bottom: 0;
-      width: 120px;
-      height: 120px;
+      /* Ширина и высота будут установлены динамически */
       cursor: pointer;
       transition: all 2s cubic-bezier(0.34, 1.56, 0.64, 1);
       transform-origin: bottom center;
@@ -44,16 +45,7 @@
       image-rendering: crisp-edges;
     }
 
-    .growing {
-      width: 200px;
-      height: 200px;
-    }
-
-    .disappearing {
-      opacity: 0 !important;
-      transform: scale(0.1) !important;
-      transition: all 0.8s ease-out !important;
-    }
+    /* Классы .growing и .disappearing останутся, размеры будут динамические */
 
     .text-box {
       position: absolute;
@@ -114,6 +106,47 @@
     const imageUrl = urlParams.get('image') || 'https://i.pinimg.com/originals/fc/a7/66/fca766643693b021645b276bd61ad09e.png';
     const wordsParam = urlParams.get('words') || 'Твори Верь Мечтай Действуй';
     const words = wordsParam.split(' ');
+    // Получаем размер из параметра URL
+    const sizeParam = urlParams.get('size') || 'medium';
+
+    // Определяем размеры на основе параметра
+    let baseSize, growSize;
+    switch(sizeParam) {
+        case 'small':
+            baseSize = 80;
+            growSize = 120; // Пропорционально увеличенный размер
+            break;
+        case 'large':
+            baseSize = 150;
+            growSize = 230; // Пропорционально увеличенный размер
+            break;
+        case 'medium':
+        default:
+            baseSize = 120;
+            growSize = 200;
+            break;
+    }
+
+    // Создаем и вставляем динамические стили
+    function injectStyles() {
+        const styleSheet = document.getElementById('dynamic-styles');
+        const dynamicCss = `
+            .cucumber {
+                width: ${baseSize}px;
+                height: ${baseSize}px;
+            }
+            .growing {
+                width: ${growSize}px;
+                height: ${growSize}px;
+            }
+            .cucumber-container {
+                width: ${baseSize + 30}px; /* Немного больше для анимации */
+                height: ${baseSize * 2}px; /* Высота контейнера */
+            }
+        `;
+        styleSheet.innerHTML = dynamicCss;
+    }
+
 
     // Параметры анимации
     const count = words.length;
@@ -152,35 +185,38 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-      const body = document.body;
+        // Вставляем стили до создания элементов
+        injectStyles();
 
-      for (let i = 0; i < count; i++) {
-        const left = margin + (totalWidth / (count - 1)) * i;
+        const body = document.body;
 
-        const container = document.createElement('div');
-        container.className = 'cucumber-container';
-        container.style.left = `${left}%`;
-        container.style.top = `${startTop}%`;
-        container.dataset.index = i;
-        body.appendChild(container);
+        for (let i = 0; i < count; i++) {
+            const left = margin + (totalWidth / (count - 1)) * i;
 
-        const cucumber = document.createElement('div');
-        cucumber.className = 'cucumber';
-        cucumber.innerHTML = `<img src="${imageUrl}" alt="Изображение">`;
-        container.appendChild(cucumber);
+            const container = document.createElement('div');
+            container.className = 'cucumber-container';
+            container.style.left = `${left}%`;
+            container.style.top = `${startTop}%`;
+            container.dataset.index = i;
+            body.appendChild(container);
 
-        cucumber.moveInterval = null;
+            const cucumber = document.createElement('div');
+            cucumber.className = 'cucumber';
+            cucumber.innerHTML = `<img src="${imageUrl}" alt="Изображение">`;
+            container.appendChild(cucumber);
 
-        let angle = Math.random() * Math.PI * 2;
-        const velocity = {
-          x: Math.cos(angle) * speed,
-          y: Math.sin(angle) * speed
-        };
+            cucumber.moveInterval = null;
 
-        containers.push({ element: container, cucumber, velocity });
-      }
+            let angle = Math.random() * Math.PI * 2;
+            const velocity = {
+            x: Math.cos(angle) * speed,
+            y: Math.sin(angle) * speed
+            };
 
-      setTimeout(startFalling, 500);
+            containers.push({ element: container, cucumber, velocity });
+        }
+
+        setTimeout(startFalling, 500);
     });
 
     function startFalling() {
@@ -224,9 +260,9 @@
             velocity.y = Math.sin(newAngle) * speed;
           }
 
-          // Ограничения движения
-          const minX = 10, maxX = 90;
-          const minY = 10, maxY = 60;
+          // Ограничения движения (могут потребоваться корректировки в зависимости от размера)
+          const minX = 5, maxX = 95;
+          const minY = 5, maxY = 65;
 
           if (left <= minX || left >= maxX) {
             velocity.x *= -1;
